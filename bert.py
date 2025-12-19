@@ -1,8 +1,7 @@
 import json
 import logging
-from transformers import BertTokenizer, BertForSequenceClassification
-from transformers import BertTokenizerFast
 from datasets import Dataset
+from transformers import BertTokenizerFast, BertForQuestionAnswering, TrainingArguments, Trainer
 
 # Read Train Data
 with open(r"data/train.json", "r", encoding="utf8") as read_file:
@@ -99,7 +98,6 @@ eval_dataset.set_format(
 )
 
 
-from transformers import BertForQuestionAnswering, TrainingArguments, Trainer
 
 model = BertForQuestionAnswering.from_pretrained("bert-base-cased")
 
