@@ -64,6 +64,10 @@ Thumbs.db
 # results
 bert_qa_results/
 bert_qa_best/
+distilbert_qa_results/
+distilbert_qa_best/
+roberta_qa_results/
+roberta_qa_best/
 
 # Ignore NLTK data
 nltk_data/

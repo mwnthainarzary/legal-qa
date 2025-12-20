@@ -56,6 +56,8 @@ pip install -r requirements.txt
 Run the training script:
 ```bash
 python bert.py
+python distilbert.py
+python roberta.py
 ```
 
 The script will:
@@ -68,6 +70,8 @@ The script will:
 Run the evaluation script:
 ```bash
 python evaluate.py --model_path ./bert_qa_best/ --test_file ./data/test.json
+python evaluate.py --model_path ./distilbert_qa_best/ --test_file ./data/test.json --output_file distilbert_evaluation_results.json
+python evaluate.py --model_path ./roberta_qa_best/ --test_file ./data/test.json --output_file roberta_evaluation_results.json
 ```
 
 #### Evaluation Arguments
