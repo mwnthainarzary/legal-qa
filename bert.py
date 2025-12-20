@@ -3,7 +3,7 @@ import logging
 import os
 import torch
 from datasets import Dataset
-from transformers import BertTokenizerFast, BertForQuestionAnswering, TrainingArguments, Trainer
+from transformers import BertTokenizerFast, BertForQuestionAnswering, TrainingArguments, Trainer, EarlyStoppingCallback
 
 # Disable tokenizer parallelism to avoid fork warnings with DataLoader workers
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
@@ -113,21 +113,29 @@ model = BertForQuestionAnswering.from_pretrained("bert-base-cased")
 training_args = TrainingArguments(
     output_dir="./bert_qa_results",
     overwrite_output_dir=True,
-    num_train_epochs=25,
-    per_device_train_batch_size=128,  # Push batch size higher
+    num_train_epochs=10,              # Reduced from 25 (early stopping will handle it)
+    per_device_train_batch_size=128,
     per_device_eval_batch_size=128,
     gradient_accumulation_steps=1,
+    learning_rate=3e-5,               # Slightly lower LR for stability
+    weight_decay=0.01,                # Regularization to prevent overfitting
+    warmup_ratio=0.1,                 # Warmup for 10% of training
     eval_strategy="steps",
-    eval_steps=500,
-    logging_steps=100,
-    save_strategy="no",
+    eval_steps=200,                   # Evaluate more frequently
+    logging_steps=50,
+    save_strategy="steps",           # Save checkpoints
+    save_steps=200,                   # Save at each eval
+    save_total_limit=3,               # Keep only best 3 checkpoints
+    load_best_model_at_end=True,      # Load best model when done
+    metric_for_best_model="eval_loss",
+    greater_is_better=False,          # Lower eval_loss is better
     report_to="none",
-    bf16=True,                        # BF16 is better on Ampere GPUs than FP16
-    dataloader_num_workers=8,         # More parallel data loading
-    dataloader_pin_memory=True,       # Faster CPU->GPU transfer
-    dataloader_prefetch_factor=4,     # Prefetch more batches
-    remove_unused_columns=False,      # Keep all columns for QA model
-    optim="adamw_torch_fused",        # Fused optimizer is faster
+    bf16=True,
+    dataloader_num_workers=8,
+    dataloader_pin_memory=True,
+    dataloader_prefetch_factor=4,
+    remove_unused_columns=False,
+    optim="adamw_torch_fused",
 )
 
 trainer = Trainer(
@@ -135,8 +143,12 @@ trainer = Trainer(
     args=training_args,
     train_dataset=train_dataset,
     eval_dataset=eval_dataset,
-    processing_class=tokenizer
+    processing_class=tokenizer,
+    callbacks=[EarlyStoppingCallback(early_stopping_patience=3)]  # Stop if no improvement for 3 evals
 )
 
 trainer.train()
+
+# Save the best model
+trainer.save_model("./bert_qa_best")
 trainer.evaluate()
