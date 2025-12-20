@@ -1,7 +1,16 @@
 import json
 import logging
+import os
+import torch
 from datasets import Dataset
 from transformers import BertTokenizerFast, BertForQuestionAnswering, TrainingArguments, Trainer
+
+# Disable tokenizer parallelism to avoid fork warnings with DataLoader workers
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
+
+# Enable TF32 for faster matrix operations on Ampere GPUs (A6000)
+torch.backends.cuda.matmul.allow_tf32 = True
+torch.backends.cudnn.allow_tf32 = True
 
 # Read Train Data
 with open(r"data/train.json", "r", encoding="utf8") as read_file:
@@ -105,13 +114,20 @@ training_args = TrainingArguments(
     output_dir="./bert_qa_results",
     overwrite_output_dir=True,
     num_train_epochs=25,
-    per_device_train_batch_size=16,
-    per_device_eval_batch_size=16,
-    evaluation_strategy="steps",
+    per_device_train_batch_size=128,  # Push batch size higher
+    per_device_eval_batch_size=128,
+    gradient_accumulation_steps=1,
+    eval_strategy="steps",
     eval_steps=500,
-    logging_steps=500,
+    logging_steps=100,
     save_strategy="no",
-    report_to="none"
+    report_to="none",
+    bf16=True,                        # BF16 is better on Ampere GPUs than FP16
+    dataloader_num_workers=8,         # More parallel data loading
+    dataloader_pin_memory=True,       # Faster CPU->GPU transfer
+    dataloader_prefetch_factor=4,     # Prefetch more batches
+    remove_unused_columns=False,      # Keep all columns for QA model
+    optim="adamw_torch_fused",        # Fused optimizer is faster
 )
 
 trainer = Trainer(
@@ -119,7 +135,7 @@ trainer = Trainer(
     args=training_args,
     train_dataset=train_dataset,
     eval_dataset=eval_dataset,
-    tokenizer=tokenizer
+    processing_class=tokenizer
 )
 
 trainer.train()
