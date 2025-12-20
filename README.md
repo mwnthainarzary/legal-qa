@@ -1,21 +1,29 @@
-# Legal QA - BERT Question Answering
+# Legal QA - Question Answering for Legal Documents
 
-A BERT-based question answering system for legal documents. Fine-tunes `bert-base-cased` on a custom legal QA dataset.
+A transformer-based question answering system for legal documents. Supports fine-tuning BERT, DistilBERT, and RoBERTa models.
 
 ## Project Structure
 
 ```
 legal-qa/
-├── bert.py                  # Main training script
-├── evaluate.py              # Model evaluation script
+├── scripts/
+│   ├── bert.py              # BERT training script
+│   ├── distilbert.py        # DistilBERT training script
+│   ├── roberta.py           # RoBERTa training script
+│   └── evaluate.py          # Model evaluation script
 ├── data/
 │   ├── train.json           # Training dataset
 │   └── test.json            # Test/evaluation dataset
-├── bert_qa_best/            # Best trained model
-├── bert_qa_results/         # Training checkpoints
+├── models/
+│   ├── bert/                # Trained BERT model
+│   ├── distilbert/          # Trained DistilBERT model
+│   └── roberta/             # Trained RoBERTa model
+├── results/
+│   ├── bert/                # BERT evaluation results
+│   ├── distilbert/          # DistilBERT evaluation results
+│   └── roberta/             # RoBERTa evaluation results
+├── checkpoints/             # Training checkpoints
 ├── nltk_data/               # NLTK data (auto-downloaded)
-├── evaluation_results.json  # Evaluation metrics
-├── evaluation_results_predictions.json  # Model predictions
 ├── requirements.txt         # Python dependencies
 ├── .gitignore
 ├── LICENSE
@@ -53,25 +61,35 @@ pip install -r requirements.txt
 
 ### Training
 
-Run the training script:
+Run the training scripts from the project root:
 ```bash
-python bert.py
-python distilbert.py
-python roberta.py
+# Train BERT
+python scripts/bert.py
+
+# Train DistilBERT
+python scripts/distilbert.py
+
+# Train RoBERTa
+python scripts/roberta.py
 ```
 
-The script will:
+The scripts will:
 1. Load and preprocess the QA dataset
-2. Fine-tune BERT for question answering
-3. Save the best model to `bert_qa_best/`
+2. Fine-tune the model for question answering
+3. Save the best model to `models/<model_name>/`
 
 ### Evaluation
 
 Run the evaluation script:
 ```bash
-python evaluate.py --model_path ./bert_qa_best/ --test_file ./data/test.json
-python evaluate.py --model_path ./distilbert_qa_best/ --test_file ./data/test.json --output_file distilbert_evaluation_results.json
-python evaluate.py --model_path ./roberta_qa_best/ --test_file ./data/test.json --output_file roberta_evaluation_results.json
+# Evaluate BERT
+python scripts/evaluate.py --model_path ./models/bert/ --test_file ./data/test.json --output_file ./results/bert/evaluation.json
+
+# Evaluate DistilBERT
+python scripts/evaluate.py --model_path ./models/distilbert/ --test_file ./data/test.json --output_file ./results/distilbert/evaluation.json
+
+# Evaluate RoBERTa
+python scripts/evaluate.py --model_path ./models/roberta/ --test_file ./data/test.json --output_file ./results/roberta/evaluation.json
 ```
 
 #### Evaluation Arguments
@@ -100,8 +118,9 @@ The evaluation script computes:
 
 #### Evaluation Outputs
 
-1. `evaluation_results.json` - All evaluation metrics
-2. `evaluation_results_predictions.json` - Model predictions with:
+Results are saved to the `results/<model>/` directory:
+1. `evaluation.json` - All evaluation metrics
+2. `evaluation_predictions.json` - Model predictions with:
    - Question
    - Context
    - Ground truth answer
@@ -110,7 +129,7 @@ The evaluation script computes:
 
 ### Configuration
 
-Key training parameters in `bert.py`:
+Key training parameters in training scripts:
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
@@ -150,22 +169,27 @@ The dataset should be in JSON format:
 ]
 ```
 
-## Model
+## Models
 
-- **Base Model**: `bert-base-cased`
-- **Task**: Extractive Question Answering
-- **Output**: Start and end positions of the answer span in the context
+| Model | Base | Parameters | Description |
+|-------|------|------------|-------------|
+| BERT | `bert-base-cased` | 110M | Standard BERT model |
+| DistilBERT | `distilbert-base-cased` | 66M | 40% smaller, 60% faster |
+| RoBERTa | `roberta-base` | 125M | Robustly optimized BERT |
+
+**Task**: Extractive Question Answering  
+**Output**: Start and end positions of the answer span in the context
 
 ## Results
 
-| Metric | Score |
-|--------|-------|
-| Start Position Accuracy | 0.5308 |
-| End Position Accuracy | 0.6051 |
-| Exact Match | 0.1838 |
-| BLEU Score | 0.4117 |
-| BERT Score F1 | 0.9327 |
-| Cosine Similarity | 0.7967 |
+| Metric | BERT | DistilBERT | RoBERTa |
+|--------|------|------------|---------|
+| Start Position Accuracy | 0.5308 | 0.5232 | 0.6128 |
+| End Position Accuracy | 0.6051 | 0.5876 | 0.6895 |
+| Exact Match | 0.1838 | 0.1791 | 0.4837 |
+| BLEU Score | 0.4117 | 0.3908 | 0.5699 |
+| BERT Score F1 | 0.9327 | 0.9305 | 0.9562 |
+| Cosine Similarity | 0.7967 | 0.7845 | 0.8545 |
 
 ## License
 

@@ -3,7 +3,7 @@ import logging
 import os
 import torch
 from datasets import Dataset
-from transformers import DistilBertTokenizerFast, DistilBertForQuestionAnswering, TrainingArguments, Trainer, EarlyStoppingCallback
+from transformers import RobertaTokenizerFast, RobertaForQuestionAnswering, TrainingArguments, Trainer, EarlyStoppingCallback
 
 # Disable tokenizer parallelism to avoid fork warnings with DataLoader workers
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
@@ -12,12 +12,15 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
 torch.backends.cuda.matmul.allow_tf32 = True
 torch.backends.cudnn.allow_tf32 = True
 
+# Get project root directory
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
 # Read Train Data
-with open(r"data/train.json", "r", encoding="utf8") as read_file:
+with open(os.path.join(PROJECT_ROOT, "data/train.json"), "r", encoding="utf8") as read_file:
     train = json.load(read_file)
 
 # Read Test Data
-with open(r"data/test.json", "r", encoding="utf8") as read_file:
+with open(os.path.join(PROJECT_ROOT, "data/test.json"), "r", encoding="utf8") as read_file:
     test = json.load(read_file)
 
 
@@ -51,7 +54,7 @@ train_dataset = Dataset.from_dict(train_data)
 eval_dataset  = Dataset.from_dict(test_data)
 
 
-tokenizer = DistilBertTokenizerFast.from_pretrained("distilbert-base-cased")
+tokenizer = RobertaTokenizerFast.from_pretrained("roberta-base")
 
 def preprocess_qa(examples):
     tokenized = tokenizer(
@@ -105,16 +108,16 @@ eval_dataset.set_format(
 )
 
 
-model = DistilBertForQuestionAnswering.from_pretrained("distilbert-base-cased")
+model = RobertaForQuestionAnswering.from_pretrained("roberta-base")
 
 training_args = TrainingArguments(
-    output_dir="./distilbert_qa_results",
+    output_dir=os.path.join(PROJECT_ROOT, "checkpoints/roberta"),
     overwrite_output_dir=True,
     num_train_epochs=10,              # Reduced from 25 (early stopping will handle it)
-    per_device_train_batch_size=128,  # DistilBERT is smaller, can use same or larger batch
-    per_device_eval_batch_size=128,
-    gradient_accumulation_steps=1,
-    learning_rate=3e-5,               # Slightly lower LR for stability
+    per_device_train_batch_size=64,   # RoBERTa may need smaller batch due to memory
+    per_device_eval_batch_size=64,
+    gradient_accumulation_steps=2,    # Effective batch size = 128
+    learning_rate=2e-5,               # Slightly lower LR for RoBERTa
     weight_decay=0.01,                # Regularization to prevent overfitting
     warmup_ratio=0.1,                 # Warmup for 10% of training
     eval_strategy="steps",
@@ -147,6 +150,6 @@ trainer = Trainer(
 trainer.train()
 
 # Save the best model
-trainer.save_model("./distilbert_qa_best")
-tokenizer.save_pretrained("./distilbert_qa_best")
+trainer.save_model(os.path.join(PROJECT_ROOT, "models/roberta"))
+tokenizer.save_pretrained(os.path.join(PROJECT_ROOT, "models/roberta"))
 trainer.evaluate()

@@ -3,7 +3,7 @@ import logging
 import os
 import torch
 from datasets import Dataset
-from transformers import BertTokenizerFast, BertForQuestionAnswering, TrainingArguments, Trainer, EarlyStoppingCallback
+from transformers import DistilBertTokenizerFast, DistilBertForQuestionAnswering, TrainingArguments, Trainer, EarlyStoppingCallback
 
 # Disable tokenizer parallelism to avoid fork warnings with DataLoader workers
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
@@ -12,12 +12,15 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
 torch.backends.cuda.matmul.allow_tf32 = True
 torch.backends.cudnn.allow_tf32 = True
 
+# Get project root directory
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
 # Read Train Data
-with open(r"data/train.json", "r", encoding="utf8") as read_file:
+with open(os.path.join(PROJECT_ROOT, "data/train.json"), "r", encoding="utf8") as read_file:
     train = json.load(read_file)
 
 # Read Test Data
-with open(r"data/test.json", "r", encoding="utf8") as read_file:
+with open(os.path.join(PROJECT_ROOT, "data/test.json"), "r", encoding="utf8") as read_file:
     test = json.load(read_file)
 
 
@@ -44,7 +47,6 @@ def flatten_qa_dataset(dataset):
     }
 
 
-
 train_data = flatten_qa_dataset(train)
 test_data  = flatten_qa_dataset(test)
 
@@ -52,8 +54,7 @@ train_dataset = Dataset.from_dict(train_data)
 eval_dataset  = Dataset.from_dict(test_data)
 
 
-
-tokenizer = BertTokenizerFast.from_pretrained("bert-base-cased")
+tokenizer = DistilBertTokenizerFast.from_pretrained("distilbert-base-cased")
 
 def preprocess_qa(examples):
     tokenized = tokenizer(
@@ -107,14 +108,13 @@ eval_dataset.set_format(
 )
 
 
-
-model = BertForQuestionAnswering.from_pretrained("bert-base-cased")
+model = DistilBertForQuestionAnswering.from_pretrained("distilbert-base-cased")
 
 training_args = TrainingArguments(
-    output_dir="./bert_qa_results",
+    output_dir=os.path.join(PROJECT_ROOT, "checkpoints/distilbert"),
     overwrite_output_dir=True,
     num_train_epochs=10,              # Reduced from 25 (early stopping will handle it)
-    per_device_train_batch_size=128,
+    per_device_train_batch_size=128,  # DistilBERT is smaller, can use same or larger batch
     per_device_eval_batch_size=128,
     gradient_accumulation_steps=1,
     learning_rate=3e-5,               # Slightly lower LR for stability
@@ -123,7 +123,7 @@ training_args = TrainingArguments(
     eval_strategy="steps",
     eval_steps=200,                   # Evaluate more frequently
     logging_steps=50,
-    save_strategy="steps",           # Save checkpoints
+    save_strategy="steps",            # Save checkpoints
     save_steps=200,                   # Save at each eval
     save_total_limit=3,               # Keep only best 3 checkpoints
     load_best_model_at_end=True,      # Load best model when done
@@ -150,5 +150,6 @@ trainer = Trainer(
 trainer.train()
 
 # Save the best model
-trainer.save_model("./bert_qa_best")
+trainer.save_model(os.path.join(PROJECT_ROOT, "models/distilbert"))
+tokenizer.save_pretrained(os.path.join(PROJECT_ROOT, "models/distilbert"))
 trainer.evaluate()

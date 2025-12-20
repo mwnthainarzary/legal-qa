@@ -14,8 +14,11 @@ from bert_score import score as bert_score
 from sentence_transformers import SentenceTransformer
 import nltk
 
-# Download required NLTK data to current folder
-nltk_data_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'nltk_data')
+# Get project root directory
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+# Download required NLTK data to project folder
+nltk_data_path = os.path.join(PROJECT_ROOT, 'nltk_data')
 os.makedirs(nltk_data_path, exist_ok=True)
 nltk.data.path.insert(0, nltk_data_path)
 
