@@ -60,3 +60,7 @@ Thumbs.db
 # Environment variables
 .env
 .env.local
+
+# results
+bert_qa_results/
+
