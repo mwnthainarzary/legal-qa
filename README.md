@@ -1,4 +1,4 @@
-# Legal QA - Question Answering for Legal Documents
+# ⚖️ Legal QA - Question Answering for Legal Documents
 
 A transformer-based question answering system for legal documents. Supports fine-tuning BERT, DistilBERT, and RoBERTa models.
 
