@@ -2,7 +2,7 @@
 import os
 import json
 import argparse
-from transformers import BertTokenizerFast, BertForQuestionAnswering
+from transformers import AutoTokenizer, AutoModelForQuestionAnswering
 import torch
 from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
@@ -232,8 +232,9 @@ def evaluate_model(model, dataloader, device, tokenizer, test_data):
 def main(args):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-    tokenizer = BertTokenizerFast.from_pretrained(args.model_path)
-    model = BertForQuestionAnswering.from_pretrained(args.model_path)
+    # Auto-detect model type using AutoTokenizer and AutoModelForQuestionAnswering
+    tokenizer = AutoTokenizer.from_pretrained(args.model_path)
+    model = AutoModelForQuestionAnswering.from_pretrained(args.model_path)
     model.to(device)
 
     raw_data = load_data(args.test_file)
