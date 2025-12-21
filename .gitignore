@@ -36,14 +36,20 @@ env/
 # Jupyter Notebook
 .ipynb_checkpoints/
 
-# Model outputs and checkpoints
-bert_qa_results/
+# Model files (large binary files)
 *.pt
 *.pth
 *.bin
 *.safetensors
+
+# Training checkpoints
 checkpoints/
 runs/
+
+# Trained models (large files - download separately)
+models/bert/
+models/distilbert/
+models/roberta/
 
 # Logs
 *.log
@@ -61,9 +67,8 @@ Thumbs.db
 .env
 .env.local
 
-# results
-bert_qa_results/
-bert_qa_best/
-
-# Ignore NLTK data
+# NLTK data (auto-downloaded)
 nltk_data/
+
+# Sentence Transformers cache
+.sentence_transformers/
